@@ -2,3 +2,5 @@ Flask
 requests
 selenium
 Flask-Session
+Jinja2
+urllib3
