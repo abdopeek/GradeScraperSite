@@ -42,8 +42,8 @@ def login():
             return apology("Must enter both username and password", 403)
         
         try:
-            # enterUsername(username)
-            enterPassword(username, password)
+            enterUsername(username)
+            enterPassword(password)
         except SyntaxError:
             return apology("Wrong details")
                 

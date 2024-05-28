@@ -1,3 +1,4 @@
 Flask
 requests
 selenium
+Flask-Session
