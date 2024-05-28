@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Index
+{% endblock %}
+
+{% block main %}
+{% for subject in subjects %}
+<table class="table">
+    <tr>
+        {{ subject['name'] }}
+    </tr>
+    <thead>
+      <tr>
+        <th scope="col">Assignment name</th>
+        <th scope="col">Score</th>
+        <th scope="col">Final Grade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assignment in subject['assignments'] %}
+      <tr>
+        <th scope="row">{{assignment['name']}}</td>
+      </tr>
+      {% for sub_assignment in assignment['sub_assignments'] %}
+      <tr>
+            <td> {{ sub_assignment['title'] }} </td>
+            <td> {{ sub_assignment['total_score'] }} / {{ sub_assignment['highest_score'] }} </td>
+            <td>  </td>
+        </tr>
+          {% endfor %}
+        {% endfor %}
+      <th scope="row">      </th>
+      <td></td>
+      <td> {{ subject['total_score'] }} / {{ subject['highest_grade'] }} | {{ subject['letter_grade'] }} </td>
+    </tbody>
+  </table>
+{% endfor %}
+
+
+
+{% endblock %}
