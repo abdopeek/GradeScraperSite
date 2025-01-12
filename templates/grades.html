@@ -14,7 +14,6 @@
       <tr>
         <th scope="col">Assignment name</th>
         <th scope="col">Score</th>
-        <th scope="col">Final Grade</th>
       </tr>
     </thead>
     <tbody>
@@ -26,13 +25,17 @@
       <tr>
             <td> {{ sub_assignment['title'] }} </td>
             <td> {{ sub_assignment['total_score'] }} / {{ sub_assignment['highest_score'] }} </td>
-            <td>  </td>
         </tr>
           {% endfor %}
         {% endfor %}
-      <th scope="row">      </th>
-      <td></td>
-      <td> {{ subject['total_score'] }} / {{ subject['highest_grade'] }} | {{ subject['letter_grade'] }} </td>
+
+      <tfoot>
+        <tr>
+          <td colspan="2" class="text-center" style="font-weight: bold;">
+            {{ subject['total_score'] }} / {{ subject['highest_grade'] }} {{"|"}} {{ subject['letter_grade'] }}
+          </td>
+        </tr>
+      </tfoot>        
     </tbody>
   </table>
 {% endfor %}

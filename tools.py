@@ -11,19 +11,7 @@ import requests  # to work with requests instead of selenium
 import json  # work with the return from the website
 from time import sleep  # sleep
 
-ser = Service(r"C:\Users\mahgo\OneDrive\Desktop\edgedriver_win64 (1)\msedgedriver.exe")
-op = webdriver.EdgeOptions()
-op.add_argument('headless')
-op.add_argument('--log-level=3')
-op.add_argument('--log-path=path/to/edge.log')
-op.add_experimental_option('excludeSwitches', ['enable-logging'])
-op.add_experimental_option('detach', True)
-driver = webdriver.Edge(service=ser, options=op)
-driver.minimize_window()
-driver.get("https://upeisis.uofcanada.edu.eg/PowerCampusSelfService/Registration/Schedule")
 s = requests.Session()
-sleep(2)
-
 
 def set_cookies(cookies, header):
     default = ['messagesUtk=50c6732c976448b3abbeadcea96c0180', '', '']
@@ -36,7 +24,7 @@ def set_cookies(cookies, header):
         header['cookie'] = ';'.join(default)
 
 
-def enterUsername(username):
+def enterUsername(username, driver):
     try:
         search = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtUserName"]'))
@@ -51,7 +39,7 @@ def enterUsername(username):
         driver.quit()
 
 
-def enterPassword(password):
+def enterPassword(password, driver):
     try:
         search = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="txtPassword"]'))
@@ -66,7 +54,7 @@ def enterPassword(password):
         driver.quit()
     
 
-def get_student_id():
+def get_student_id(driver):
     url = 'https://upeisis.uofcanada.edu.eg/PowerCampusSelfService/Registration/Schedule'
     sleep(1.5)
     cookies = driver.get_cookies()
@@ -81,10 +69,10 @@ def get_student_id():
         raise SyntaxError
 
 
-def get_sections(id):
+def get_sections(id, driver):
     sections = []
     url = r'https://upeisis.uofcanada.edu.eg/PowerCampusSelfService/Schedule/Student'
-    session = {"year": "2024", "term": "WINTER", "session": ""}  # update this every semester
+    session = {"year": "2024", "term": "FALL", "session": ""}  # update this every semester
     payload = {'personId': id, "yearTermSession": session}
     sleep(1.5)
     cookies = driver.get_cookies()
@@ -104,7 +92,7 @@ def get_sections(id):
     return sections
 
 
-def get_data(param):
+def get_data(param, driver):
     grade_link = 'https://upeisis.uofcanada.edu.eg/PowerCampusSelfService/Students/ActivityGrades'
 
     sleep(1.5)  # wait for cookies to load in
@@ -128,37 +116,35 @@ def get_data(param):
         else:
             outputs.append(output)
 
+    driver.quit()
     return outputs
 
 
 def process(data):
-    finalTermAssignments = data['finaltermAssignments']
-    for indice, i in enumerate(finalTermAssignments):
-        i = {
-            'description': i['description'],
-            'studentAssignments': i['studentAssignments']
+    # Use list comprehensions to optimize loops
+    data['finaltermAssignments'] = [
+        {
+            'description': item['description'],
+            'studentAssignments': [
+                {
+                    'activityScore': assignment['activityScore'],
+                    'earnedPoints': assignment['earnedPoints'],
+                    'isEarned': assignment['isEarned'],
+                    'title': assignment['title'],
+                    'possiblePoints': assignment['possiblePoints'],
+                }
+                for assignment in item['studentAssignments']
+            ]
         }
-        assignments = i['studentAssignments']
-
-        for index, assignment in enumerate(assignments):
-            filtered = {
-                'activityScore': assignment['activityScore'],
-                'earnedPoints': assignment['earnedPoints'],
-                'isEarned': assignment['isEarned'],
-                'title': assignment['title'],
-                'possiblePoints': assignment['possiblePoints']
-            }
-
-            i['studentAssignments'][index] = filtered
-
-        finalTermAssignments[indice] = i
-
-    data['finaltermAssignments'] = finalTermAssignments
-    result = {
+        for item in data['finaltermAssignments']
+    ]
+    
+    # Prepare the final result
+    return {
         'finalscore': data['finalScore'],
-        'finalTermAssignments': data['finaltermAssignments']
+        'finalTermAssignments': data['finaltermAssignments'],
     }
-    return result
+
 
 
 def print_output(data):
@@ -187,12 +173,17 @@ def print_output(data):
                 sub["total_score"] = "Not earned yet"
                 sub["highest_score"] = float(sub_assignment['possiblePoints'])
             main['sub_assignments'].append(sub)
-            print(sub)
         final['assignments'].append(main)
-        print(main)
     final['highest_grade'] = highest_score
-    final["letter_grade"] = get_letter_grade(total_score)
-    final["total_score"] = total_score
+    final["total_score"] = round(total_score, 2)
+    
+    lost = highest_score - total_score
+    lost = round(lost, 2)
+    if highest_score >= 100:
+        final['letter_grade'] = f"Final score: {get_letter_grade(total_score)} | %{lost} lost" 
+    else:
+        final['letter_grade'] = f"{get_best_scenario(highest_score, total_score)} | %{lost} lost"
+
     return final
     try:
         lost = (highest_score - total_score)
@@ -255,5 +246,16 @@ def get_letter_grade(grade):
     }
     
     for range_tuple, letter in grade_ranges.items():
-        if range_tuple[0] <= grade <= range_tuple[1]:
+        if range_tuple[0] <= round(grade) <= range_tuple[1]:
             return letter
+        
+def get_best_scenario(highest, total):
+    lost = highest - total
+    if lost <= 9:
+        return "Best case scenario A+"
+    elif 9 < lost <= 15:
+        return "Best case scenario A"
+    elif 15 < lost <= 20:
+        return "Best case scenario A-"
+    else:
+        return "Less than A"
