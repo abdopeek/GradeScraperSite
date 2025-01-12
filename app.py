@@ -100,13 +100,7 @@ def login():
         except SyntaxError:
             quit_webdriver()
             return apology("Wrong details")
-            
-        try:
-            with open(f"sessions/{username}.txt", 'r') as file:
-                pass
-        except FileNotFoundError:
-            with open(f"sessions/{username}.txt", 'w') as file:
-                file.write(password)    
+               
         student = get_student_id(driver)
         session['user_id'] = student
         sections = get_sections(student, driver)
